@@ -93,12 +93,12 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .sim .dow { font-family: var(--font-body); font-size: 1rem; font-weight: 600; margin-left: 6px; }
 .sim .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border-top: 1px solid color-mix(in srgb, currentColor 30%, transparent); padding-top: 12px; }
 .sim .row div { min-width: 0; }
-.sim .row b { display: block; font-family: var(--font-num); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-.sim .row span { font-size: .75rem; opacity: .85; }
+.sim .row b { display: block; font-family: var(--font-num); font-size: clamp(.9rem, 4.2vw, 1.05rem); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -0.02em; }
+.sim .row span { font-size: .75rem; opacity: .85; word-break: keep-all; }
 
 .cycles { overflow-x: auto; margin: 0 -4px; padding: 0 4px 4px; }
 .cycles table { border-collapse: collapse; width: 100%; font-size: .82rem; font-variant-numeric: tabular-nums; }
-.cycles th, .cycles td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.cycles th, .cycles td { text-align: left; padding: 7px 3px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .cycles th { color: var(--muted); font-weight: 500; font-size: .78rem; }
 .cycles td.n { font-family: var(--font-num); }
 .cycles th:last-child, .cycles td:last-child { text-align: right; }
@@ -150,6 +150,12 @@ header p, .hint, .status, .sim, .method-box { text-align: left; }
     0%, 100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 38%, transparent), 0 0 0 4px var(--accent-soft); }
     50% { box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 38%, transparent), 0 0 0 9px color-mix(in srgb, var(--accent) 22%, transparent); }
   }
+}
+@media (max-width: 360px) {
+  .sim { padding: 20px 16px 18px; }
+  .sim .row { gap: 6px; }
+  .cycles table { font-size: .74rem; }
+  .cycles td.n { letter-spacing: -0.03em; }
 }
 </style>
 
