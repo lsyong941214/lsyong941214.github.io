@@ -1,6 +1,7 @@
 #!/bin/sh
-# 공개 웹사이트용 docs/index.html 생성 (index.html 본문을 완전한 HTML 문서로 감싼다)
-# 미리보기 이미지(og.png)는 og-image.html을 1200x630으로 캡처해서 만든다
+# 공개 웹사이트용 docs/index.html 생성 (index.html을 완전한 HTML 문서로 감싼다)
+# - index.html 맨 앞의 <title>·<link>·<style>은 <head>로, 본문·스크립트는 <body>로 보낸다
+# - 미리보기 이미지(og.png)는 og-image.html을 1200x630으로 캡처해서 만든다
 cd "$(dirname "$0")"
 SITE="https://lsyong941214.github.io"
 TITLE="알뜰폰 약정 계산기"
@@ -25,10 +26,10 @@ cp og.png docs/og.png
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
-</head>
-<body>
 EOF
-  cat index.html
+  sed -n '1,/^<div class="wrap">/p' index.html | sed '$d' | grep -v 'claude:viewport-fit-sides'
+  printf '</head>\n<body>\n'
+  sed -n '/^<div class="wrap">/,$p' index.html
   printf '\n</body>\n</html>\n'
 } > docs/index.html
 echo "docs/index.html 생성 완료"
