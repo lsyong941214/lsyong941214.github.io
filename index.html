@@ -46,18 +46,20 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
 .card h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; font-weight: 600; }
 label.field { display: grid; gap: 6px; font-weight: 500; font-size: .9rem; }
 input[type="date"], input[type="number"], select {
-  font: inherit; color: var(--ink); background: var(--chip); border: 1px solid var(--line); border-radius: 10px;
-  padding: 10px 12px; width: 100%; min-width: 0;
+  font: inherit; font-size: .9rem; color: var(--ink); background: var(--chip); border: 1px solid var(--line); border-radius: 9px;
+  padding: 7px 10px; width: 100%; min-width: 0;
 }
 input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+/* 선택 버튼은 한 줄에 고르게 나눈다 */
+.chips { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
 .chip {
-  font: inherit; font-size: .9rem; border: 1px solid var(--line); background: var(--chip); color: var(--ink);
-  border-radius: 999px; padding: 7px 14px; cursor: pointer; font-variant-numeric: tabular-nums;
+  font: inherit; font-size: .82rem; border: 1px solid var(--line); background: var(--chip); color: var(--ink);
+  border-radius: 999px; padding: 6px 2px; cursor: pointer; font-variant-numeric: tabular-nums;
+  text-align: center; white-space: nowrap; min-width: 0;
 }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .custom { display: flex; align-items: center; gap: 8px; }
-.custom input { width: 90px; }
+.custom input { width: 72px; padding: 5px 8px; }
 .hint { color: var(--muted); font-size: .82rem; margin: 0; }
 
 /* result: styled like a SIM card */
@@ -75,15 +77,16 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .sim .row span { font-size: .75rem; opacity: .85; }
 
 .cycles { overflow-x: auto; margin: 0 -4px; padding: 0 4px 4px; }
-.cycles table { border-collapse: collapse; width: 100%; font-size: .86rem; font-variant-numeric: tabular-nums; }
-.cycles th, .cycles td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.cycles table { border-collapse: collapse; width: 100%; font-size: .82rem; font-variant-numeric: tabular-nums; }
+.cycles th, .cycles td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .cycles th { color: var(--muted); font-weight: 500; font-size: .78rem; }
 .cycles td.n { font-family: var(--font-num); }
+.cycles th:last-child, .cycles td:last-child { text-align: right; }
 .cycles tr.after td { color: var(--warn); font-weight: 600; }
-.tag { display: inline-block; font-size: .72rem; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; }
+.tag { display: inline-block; font-size: .68rem; padding: 0 5px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; }
 
 .btn {
-  font: inherit; font-weight: 600; border-radius: 12px; padding: 12px 16px; cursor: pointer; text-align: center;
+  font: inherit; font-weight: 600; border-radius: 12px; padding: 11px 16px; cursor: pointer; text-align: center;
   border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); text-decoration: none; display: block; width: 100%;
 }
 .btn.secondary { background: transparent; color: var(--accent); }
@@ -94,20 +97,19 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .gcal-list a:hover { border-color: var(--accent); }
 .gcal-list a span:last-child { color: var(--accent); font-weight: 600; white-space: nowrap; }
 .gcal-list a .d { font-family: var(--font-num); font-size: .85rem; color: var(--muted); }
-.status { font-size: .85rem; color: var(--muted); margin: 0; min-height: 1.2em; }
+.status { font-size: .85rem; color: var(--muted); margin: 0; }
+.status:empty { display: none; }
 
-/* 가운데 정렬 */
-header, .card, .sim, .hint, .status { text-align: center; }
-.chips, .custom { justify-content: center; }
-label.field { justify-items: center; }
-label.field > input, label.field > select { max-width: 320px; text-align: center; text-align-last: center; }
-.custom input { text-align: center; }
-.sim .row div { text-align: center; }
-.cycles th, .cycles td { text-align: center; }
-.method-box { display: grid; gap: 4px; justify-items: center; padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); }
-.method-name { font-weight: 600; color: var(--accent); }
-.gcal-list a { flex-direction: column; justify-content: center; gap: 2px; text-align: center; }
+/* 정렬: 제목은 가운데, 내용은 왼쪽, 버튼 글자는 가운데 */
+header h1, .card h2 { text-align: center; }
+header p, .hint, .status, .sim, .method-box { text-align: left; }
+.btn, .chip { text-align: center; }
+.method-box { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); }
+.method-name { font-weight: 600; color: var(--accent); font-size: .9rem; }
+.field-title { font-weight: 500; font-size: .9rem; }
 .sim::after { top: 16px; right: 16px; width: 34px; height: 26px; }
+.more { display: grid; gap: 8px; }
+.more summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
 @media (prefers-reduced-motion: no-preference) { .chip, .btn, .gcal-list a { transition: background .15s, border-color .15s, color .15s; } }
 </style>
 
@@ -124,7 +126,7 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
     </label>
 
     <div class="field" style="display:grid;gap:8px">
-      <span style="font-weight:500;font-size:.9rem">약정(할인) 기간</span>
+      <span class="field-title">약정(할인) 기간</span>
       <div class="chips" id="monthChips" role="group" aria-label="약정 기간"></div>
       <div class="custom">
         <label for="customMonths" class="hint" style="margin:0">직접 입력</label>
@@ -137,7 +139,7 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
       <select id="carrier"></select>
     </label>
     <div class="field" id="netBox" style="display:grid;gap:8px" hidden>
-      <span style="font-weight:500;font-size:.9rem">통신망</span>
+      <span class="field-title">통신망</span>
       <div class="chips" id="netChips" role="group" aria-label="통신망"></div>
       <p class="hint">이 업체는 망마다 계산 방식이 달라요. 유심이나 가입 안내에 적힌 망을 골라 주세요.</p>
     </div>
@@ -159,35 +161,35 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
     </div>
   </section>
 
-  <section class="card" aria-labelledby="cy-h">
-    <h2 id="cy-h">회차별 기간</h2>
-    <div class="cycles"><table>
-      <thead><tr><th>회차</th><th>기간</th><th>일수</th></tr></thead>
-      <tbody id="cycleBody"></tbody>
-    </table></div>
-  </section>
-
   <section class="card" aria-labelledby="al-h">
-    <h2 id="al-h">알림 추가하기</h2>
+    <h2 id="al-h">캘린더에 알림 추가</h2>
     <div class="chips" id="alertChips" role="group" aria-label="알림 시점"></div>
     <p class="hint">여러 개를 고를 수 있어요. 알림은 해당 날짜 오전 9시에 울려요.</p>
-    <div class="actions">
-      <button class="btn" id="addBtn" type="button">알림 추가하기</button>
-    </div>
-    <div id="addPanel" class="actions" hidden>
+    <div id="addPanel" class="actions">
       <div id="directBlock" class="actions" hidden>
         <button class="btn" id="directBtn" type="button">내 Google 캘린더에 바로 등록</button>
         <p class="hint">휴대폰 Google 캘린더 앱에도 바로 나타나고, 고른 시점마다 앱 알림이 울려요.</p>
       </div>
       <p class="hint" id="publicHint" hidden></p>
       <div id="icsBlock" class="actions">
-        <button class="btn" id="icsBtn" type="button">내 캘린더에 일정·알림 등록 (.ics)</button>
+        <button class="btn" id="icsBtn" type="button">내 캘린더에 일정·알림 등록</button>
         <p class="hint">아이폰 캘린더, 삼성 캘린더, 아웃룩에서 알림까지 한 번에 등록돼요.</p>
       </div>
-      <p class="hint" id="gcalHint">또는 링크로 추가 (알림마다 일정 1개, Google 캘린더 웹에서 열려요)</p>
-      <div class="gcal-list" id="gcalList"></div>
+      <p class="status" id="status" role="status"></p>
+      <details class="more">
+        <summary>Google 캘린더 링크로 추가</summary>
+        <p class="hint" id="gcalHint">알림마다 일정이 1개씩 생기고, Google 캘린더 웹에서 열려요.</p>
+        <div class="gcal-list" id="gcalList"></div>
+      </details>
     </div>
-    <p class="status" id="status" role="status"></p>
+  </section>
+
+  <section class="card" aria-labelledby="cy-h">
+    <h2 id="cy-h">회차별 기간</h2>
+    <div class="cycles"><table>
+      <thead><tr><th>회차</th><th>기간</th><th>일수</th></tr></thead>
+      <tbody id="cycleBody"></tbody>
+    </table></div>
   </section>
 </div>
 
@@ -382,13 +384,12 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
     $("dday").textContent = dd > 0 ? `D-${dd}` : dd === 0 ? "D-DAY" : `D+${-dd}`;
 
     const rows = result.cycles.map((c) =>
-      `<tr><td>${c.label}${c.tag ? `<span class="tag">${c.tag}</span>` : ""}</td><td class="n">${fmt(c.s).slice(2)} ~ ${fmt(c.e).slice(2)}</td><td class="n">${days(c.s, c.e) + 1}</td></tr>`
+      `<tr><td>${c.label}${c.tag ? `<span class="tag">${c.tag}</span>` : ""}</td><td class="n">${fmt(c.s).slice(2)}~${fmt(c.e).slice(2)}</td><td class="n">${days(c.s, c.e) + 1}</td></tr>`
     );
     rows.push(`<tr class="after"><td>정상요금</td><td class="n">${fmt(result.change).slice(2)} ~</td><td></td></tr>`);
     $("cycleBody").innerHTML = rows.join("");
 
-    $("addBtn").disabled = state.alerts.size === 0;
-    if (!$("addPanel").hidden) renderAddPanel();
+    renderAddPanel();
   }
 
   // ---- calendar
@@ -569,7 +570,6 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
     }
   };
 
-  $("addBtn").onclick = () => { if (!result) return; $("addPanel").hidden = false; renderAddPanel(); track("add"); };
   const ua = navigator.userAgent;
   const isIOS = /iP(hone|ad|od)/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const isAndroid = /Android/i.test(ua);
@@ -609,7 +609,9 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
 
   // ---- Supabase: 방문·사용 기록, 업체 목록
   // claude.ai 안에서는 외부 요청이 막혀 있으므로 공개 사이트에서만 쓴다
+  const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === "file:";
   const sbOn = !inViewer && !!SUPABASE_URL && !!SUPABASE_KEY;
+  const trackOn = sbOn && !isLocal; // 로컬 미리보기는 통계에 넣지 않는다
   const sb = (path, opts = {}) =>
     fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       ...opts,
@@ -629,7 +631,7 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
   try { refHost = document.referrer ? new URL(document.referrer).hostname : null; } catch (e) {}
 
   function track(type) {
-    if (!sbOn) return;
+    if (!trackOn) return;
     sb("events", {
       method: "POST",
       headers: { Prefer: "return=minimal" },
