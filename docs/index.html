@@ -131,6 +131,26 @@ header p, .hint, .status, .sim, .method-box { text-align: left; }
 .more { display: grid; gap: 8px; }
 .more summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
 @media (prefers-reduced-motion: no-preference) { .chip, .btn, .gcal-list a { transition: background .15s, border-color .15s, color .15s; } }
+/* 캘린더 등록 버튼 강조 */
+.btn.cta {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 54px; padding: 14px 12px; font-size: clamp(14px, 4.4vw, 17px); font-weight: 700; border-radius: 14px; white-space: nowrap; word-break: keep-all;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #8B5CF6));
+  border-color: transparent;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 38%, transparent), 0 0 0 4px var(--accent-soft);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn.cta svg { flex: none; width: 1.2em; height: 1.2em; }
+.btn.cta:hover { filter: brightness(1.07); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 48%, transparent), 0 0 0 5px var(--accent-soft); }
+.btn.cta:active { transform: translateY(1px) scale(.99); box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 0 4px var(--accent-soft); }
+.btn.cta:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) {
+  .btn.cta { transition: transform .1s, box-shadow .15s, filter .15s; animation: cta-glow 2.4s ease-in-out 3; }
+  @keyframes cta-glow {
+    0%, 100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 38%, transparent), 0 0 0 4px var(--accent-soft); }
+    50% { box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 38%, transparent), 0 0 0 9px color-mix(in srgb, var(--accent) 22%, transparent); }
+  }
+}
 </style>
 
 </head>
@@ -194,7 +214,7 @@ header p, .hint, .status, .sim, .method-box { text-align: left; }
       </div>
       <p class="hint" id="publicHint" hidden></p>
       <div id="icsBlock" class="actions">
-        <button class="btn" id="icsBtn" type="button">내 캘린더에 일정·알림 등록</button>
+        <button class="btn cta" id="icsBtn" type="button"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5h5"/></svg><span>내 캘린더에 일정·알림 등록</span></button>
         <p class="hint">아이폰 캘린더, 삼성 캘린더, 아웃룩에서 알림까지 한 번에 등록돼요.</p>
       </div>
       <p class="status" id="status" role="status"></p>
