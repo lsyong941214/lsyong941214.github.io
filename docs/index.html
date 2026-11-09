@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>알뜰폰 약정 계산기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one narrow column — inputs card, result "SIM card" panel, billing-cycle strip, alert builder */
+:root {
+  --bg: #EEF1F5;
+  --surface: #FFFFFF;
+  --ink: #141922;
+  --muted: #5E6878;
+  --line: #D8DEE8;
+  --accent: #2C4FD8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3E9FD;
+  --chip: #F4F6FA;
+  --warn: #B4540B;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F131A; --surface: #181E28; --ink: #E8ECF3; --muted: #97A1B2; --line: #2B3442;
+    --accent: #7C97FF; --accent-ink: #0B1020; --accent-soft: #212B4A; --chip: #1F2633; --warn: #F0A15C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F131A; --surface: #181E28; --ink: #E8ECF3; --muted: #97A1B2; --line: #2B3442;
+  --accent: #7C97FF; --accent-ink: #0B1020; --accent-soft: #212B4A; --chip: #1F2633; --warn: #F0A15C;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 520px; margin: 0 auto; display: grid; gap: 16px; }
+header h1 { font-size: 1.45rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.card h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; font-weight: 600; }
+label.field { display: grid; gap: 6px; font-weight: 500; font-size: .9rem; }
+input[type="date"], input[type="number"], select {
+  font: inherit; color: var(--ink); background: var(--chip); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; width: 100%; min-width: 0;
+}
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: .9rem; border: 1px solid var(--line); background: var(--chip); color: var(--ink);
+  border-radius: 999px; padding: 7px 14px; cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.custom { display: flex; align-items: center; gap: 8px; }
+.custom input { width: 90px; }
+.hint { color: var(--muted); font-size: .82rem; margin: 0; }
+
+/* result: styled like a SIM card */
+.sim { position: relative; overflow: hidden; background: var(--accent); color: var(--accent-ink); border-radius: 18px 44px 18px 18px; padding: 22px 22px 20px; display: grid; gap: 14px; }
+.sim::after { content: ""; position: absolute; right: 22px; top: 22px; width: 46px; height: 36px; border-radius: 7px;
+  background: linear-gradient(90deg, transparent 32%, currentColor 32% 34%, transparent 34% 66%, currentColor 66% 68%, transparent 68%),
+              linear-gradient(0deg, transparent 48%, currentColor 48% 52%, transparent 52%);
+  border: 2px solid currentColor; opacity: .35; }
+.sim .label { font-size: .8rem; opacity: .85; letter-spacing: .04em; }
+.sim .big { font-family: var(--font-num); font-size: clamp(1.7rem, 7vw, 2.2rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.sim .dow { font-family: var(--font-body); font-size: 1rem; font-weight: 600; margin-left: 6px; }
+.sim .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border-top: 1px solid color-mix(in srgb, currentColor 30%, transparent); padding-top: 12px; }
+.sim .row div { min-width: 0; }
+.sim .row b { display: block; font-family: var(--font-num); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.sim .row span { font-size: .75rem; opacity: .85; }
+
+.cycles { overflow-x: auto; margin: 0 -4px; padding: 0 4px 4px; }
+.cycles table { border-collapse: collapse; width: 100%; font-size: .86rem; font-variant-numeric: tabular-nums; }
+.cycles th, .cycles td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.cycles th { color: var(--muted); font-weight: 500; font-size: .78rem; }
+.cycles td.n { font-family: var(--font-num); }
+.cycles tr.after td { color: var(--warn); font-weight: 600; }
+.tag { display: inline-block; font-size: .72rem; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; }
+
+.btn {
+  font: inherit; font-weight: 600; border-radius: 12px; padding: 12px 16px; cursor: pointer; text-align: center;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); text-decoration: none; display: block; width: 100%;
+}
+.btn.secondary { background: transparent; color: var(--accent); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.actions { display: grid; gap: 10px; }
+.gcal-list { display: grid; gap: 8px; }
+.gcal-list a { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); text-decoration: none; background: var(--chip); }
+.gcal-list a:hover { border-color: var(--accent); }
+.gcal-list a span:last-child { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.gcal-list a .d { font-family: var(--font-num); font-size: .85rem; color: var(--muted); }
+.status { font-size: .85rem; color: var(--muted); margin: 0; min-height: 1.2em; }
+
+/* 가운데 정렬 */
+header, .card, .sim, .hint, .status { text-align: center; }
+.chips, .custom { justify-content: center; }
+label.field { justify-items: center; }
+label.field > input, label.field > select { max-width: 320px; text-align: center; text-align-last: center; }
+.custom input { text-align: center; }
+.sim .row div { text-align: center; }
+.cycles th, .cycles td { text-align: center; }
+.method-box { display: grid; gap: 4px; justify-items: center; padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); }
+.method-name { font-weight: 600; color: var(--accent); }
+.gcal-list a { flex-direction: column; justify-content: center; gap: 2px; text-align: center; }
+.sim::after { top: 16px; right: 16px; width: 34px; height: 26px; }
+@media (prefers-reduced-motion: no-preference) { .chip, .btn, .gcal-list a { transition: background .15s, border-color .15s, color .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>알뜰폰 약정 계산기</h1>
+    <p>개통일과 프로모션 기간을 넣으면 요금이 바뀌는 날을 알려드려요.</p>
+  </header>
+
+  <section class="card" aria-labelledby="in-h">
+    <h2 id="in-h">입력</h2>
+    <label class="field" for="openDate">개통(예정)일
+      <input type="date" id="openDate">
+    </label>
+
+    <div class="field" style="display:grid;gap:8px">
+      <span style="font-weight:500;font-size:.9rem">약정(할인) 기간</span>
+      <div class="chips" id="monthChips" role="group" aria-label="약정 기간"></div>
+      <div class="custom">
+        <label for="customMonths" class="hint" style="margin:0">직접 입력</label>
+        <input type="number" id="customMonths" min="1" max="60" inputmode="numeric" placeholder="개월">
+        <span class="hint" style="margin:0">개월</span>
+      </div>
+    </div>
+
+    <label class="field" for="carrier">알뜰폰 업체
+      <select id="carrier"></select>
+    </label>
+    <div class="field" id="netBox" style="display:grid;gap:8px" hidden>
+      <span style="font-weight:500;font-size:.9rem">통신망</span>
+      <div class="chips" id="netChips" role="group" aria-label="통신망"></div>
+      <p class="hint">이 업체는 망마다 계산 방식이 달라요. 유심이나 가입 안내에 적힌 망을 골라 주세요.</p>
+    </div>
+    <div class="method-box">
+      <div class="method-name" id="methodName">-</div>
+      <p class="hint" id="methodNote"></p>
+    </div>
+  </section>
+
+  <section class="sim" aria-live="polite">
+    <div>
+      <div class="label">약정변경일 · 정상요금 시작</div>
+      <div class="big" id="changeDate">-</div>
+    </div>
+    <div class="row">
+      <div><b id="lastDay">-</b><span>할인 마지막 날</span></div>
+      <div><b id="totalDays">-</b><span>할인 이용일수</span></div>
+      <div><b id="dday">-</b><span>오늘 기준</span></div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="cy-h">
+    <h2 id="cy-h">회차별 기간</h2>
+    <div class="cycles"><table>
+      <thead><tr><th>회차</th><th>기간</th><th>일수</th></tr></thead>
+      <tbody id="cycleBody"></tbody>
+    </table></div>
+  </section>
+
+  <section class="card" aria-labelledby="al-h">
+    <h2 id="al-h">알림 추가하기</h2>
+    <div class="chips" id="alertChips" role="group" aria-label="알림 시점"></div>
+    <p class="hint">여러 개를 고를 수 있어요. 알림은 해당 날짜 오전 9시에 울려요.</p>
+    <div class="actions">
+      <button class="btn" id="addBtn" type="button">알림 추가하기</button>
+    </div>
+    <div id="addPanel" class="actions" hidden>
+      <div id="directBlock" class="actions" hidden>
+        <button class="btn" id="directBtn" type="button">내 Google 캘린더에 바로 등록</button>
+        <p class="hint">휴대폰 Google 캘린더 앱에도 바로 나타나고, 고른 시점마다 앱 알림이 울려요.</p>
+      </div>
+      <p class="hint" id="publicHint" hidden></p>
+      <div id="icsBlock" class="actions">
+        <button class="btn" id="icsBtn" type="button">내 캘린더에 일정·알림 등록 (.ics)</button>
+        <p class="hint">아이폰 캘린더, 삼성 캘린더, 아웃룩에서 알림까지 한 번에 등록돼요.</p>
+      </div>
+      <p class="hint" id="gcalHint">또는 링크로 추가 (알림마다 일정 1개, Google 캘린더 웹에서 열려요)</p>
+      <div class="gcal-list" id="gcalList"></div>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </section>
+</div>
+
+<script>
+(function () {
+  // ---- 배포 설정 (공개 웹사이트로 올릴 때 채우기)
+  // Google Cloud 콘솔 → API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션)
+  const GOOGLE_CLIENT_ID = "";
+  // 공개 웹사이트 주소. claude.ai 링크로 들어온 사람이 커넥터가 없을 때 이 주소로 안내한다.
+  const PUBLIC_URL = "";
+
+  const MONTHS = [3, 5, 6, 7, 12, 24];
+  const ALERTS = [
+    { key: 7, label: "일주일 전" },
+    { key: 3, label: "3일 전" },
+    { key: 1, label: "하루 전" },
+    { key: 0, label: "당일" },
+  ];
+  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  // 업체·망별 할인 종료일 계산 방식 (모요 업체 페이지 "할인 종료일" 항목, 2026-11-09 확인)
+  // day = 일 단위(개통일부터 N개월 뒤 같은 날 전날까지), incl = 월 단위(개통월 포함 N개월, 말일 마감)
+  const CARRIERS = [
+    { id: "m32", name: "KCTV알뜰폰", net: { "LG U+":"incl" } },
+    { id: "m2", name: "KG모바일", net: { "LG U+":"incl" } },
+    { id: "m19", name: "KT스카이라이프", net: { "KT":"day" } },
+    { id: "m3", name: "KT엠모바일", net: { "KT":"day" } },
+    { id: "m5", name: "LG헬로모바일", net: { "LG U+":"incl" } },
+    { id: "m7", name: "SK7모바일", net: { "SKT":"incl" } },
+    { id: "m14", name: "U+유모바일", net: { "LG U+":"incl" } },
+    { id: "m8", name: "고고모바일", net: { "KT":"day","SKT":"day" } },
+    { id: "m9", name: "더원모바일", net: { "KT":"day" } },
+    { id: "m10", name: "드림라인 모바일", net: { "KT":"incl" } },
+    { id: "m56", name: "리브모바일", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m11", name: "마블링", net: { "LG U+":"day" } },
+    { id: "m12", name: "마이월드", net: { "LG U+":"incl" } },
+    { id: "m69", name: "모나", net: { "LG U+":"day" } },
+    { id: "m30", name: "모빙", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m39", name: "밸류컴", net: { "KT":"incl","LG U+":"incl" } },
+    { id: "m87", name: "비즈인모바일", net: { "KT":"day" } },
+    { id: "m15", name: "사람과연결", net: { "LG U+":"incl" } },
+    { id: "m16", name: "서경모바일", net: { "LG U+":"incl" } },
+    { id: "m13", name: "쉐이크모바일", net: { "KT":"day" } },
+    { id: "m1", name: "슈가모바일", net: { "LG U+":"incl" } },
+    { id: "m17", name: "스노우맨", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m18", name: "스마텔", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m73", name: "스피츠모바일", net: { "KT":"day" } },
+    { id: "m72", name: "시월모바일", net: { "LG U+":"incl" } },
+    { id: "m26", name: "아시아모바일", net: { "KT":"incl" } },
+    { id: "m21", name: "아이즈모바일", net: { "KT":"day","LG U+":"incl","SKT":"day" } },
+    { id: "m22", name: "앤텔레콤", net: { "KT":"incl","LG U+":"incl" } },
+    { id: "m24", name: "에르엘", net: { "KT":"day","LG U+":"incl" } },
+    { id: "m25", name: "에스원안심모바일", net: { "KT":"day","LG U+":"incl","SKT":"day" } },
+    { id: "m23", name: "에이모바일", net: { "KT":"day","LG U+":"incl","SKT":"day" } },
+    { id: "m28", name: "여유알뜰모바일", net: { "LG U+":"incl" } },
+    { id: "m27", name: "오파스모바일", net: { "KT":"day" } },
+    { id: "m29", name: "위너스텔", net: { "KT":"day","LG U+":"day" } },
+    { id: "m34", name: "이야기모바일", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m33", name: "이지모바일", net: { "KT":"day","LG U+":"day" } },
+    { id: "m31", name: "인스모바일", net: { "LG U+":"incl" } },
+    { id: "m71", name: "찬스모바일", net: { "LG U+":"incl" } },
+    { id: "m35", name: "토스모바일", net: { "KT":"incl","LG U+":"incl","SKT":"incl" } },
+    { id: "m38", name: "티플러스", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m37", name: "프리티", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m20", name: "핀다이렉트", net: { "KT":"day","LG U+":"day","SKT":"day" } },
+    { id: "m40", name: "한패스모바일", net: { "LG U+":"incl" } },
+    { id: "etc", name: "기타 / 모름", net: { "": "incl" } },
+  ];
+  const METHOD_NAME = { day: "일 단위 계산 · 개통일부터 N개월", incl: "월 단위 계산 · 개통월 포함 N개월" };
+  const carrierOf = () => CARRIERS.find((c) => c.id === state.carrier) || CARRIERS[CARRIERS.length - 1];
+  const nets = (c) => Object.keys(c.net);
+  // 망마다 방식이 다를 때만 망을 고르게 한다
+  const needsNet = (c) => new Set(Object.values(c.net)).size > 1;
+  const methodOf = (c) => c.net[state.net] || c.net[nets(c)[0]];
+  const $ = (id) => document.getElementById(id);
+
+  // inside the claude.ai viewer, page-started downloads are blocked
+  let inViewer = false;
+  try { inViewer = !!window.claude || window.top !== window.self; } catch (e) { inViewer = true; }
+
+  const state = { open: null, months: 7, carrier: "etc", net: "", alerts: new Set([3, 1]) };
+  try {
+    const s = JSON.parse(localStorage.getItem("mvno-calc") || "null");
+    if (s) {
+      if (s.open) state.open = s.open;
+      if (s.months) state.months = s.months;
+      if (s.carrier && CARRIERS.some((c) => c.id === s.carrier)) state.carrier = s.carrier;
+      if (typeof s.net === "string") state.net = s.net;
+      if (Array.isArray(s.alerts)) state.alerts = new Set(s.alerts);
+    }
+  } catch (e) {}
+
+  // ---- date helpers (local dates, noon to dodge edge cases)
+  const mk = (y, m, d) => new Date(y, m, d, 12);
+  const parse = (s) => { const [y, m, d] = s.split("-").map(Number); return mk(y, m - 1, d); };
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const ymd = (d) => iso(d).replace(/-/g, "");
+  const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+  const addDays = (d, n) => mk(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const addMonths = (d, n) => {
+    const y = d.getFullYear(), m = d.getMonth() + n;
+    const ty = y + Math.floor(m / 12), tm = ((m % 12) + 12) % 12;
+    return mk(ty, tm, Math.min(d.getDate(), dim(ty, tm)));
+  };
+  const monthStart = (d, n) => mk(d.getFullYear(), d.getMonth() + n, 1);
+  const days = (a, b) => Math.round((b - a) / 86400000);
+  const fmt = (d) => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const fmtDow = (d) => `${fmt(d)} (${DOW[d.getDay()]})`;
+  const today = () => { const t = new Date(); return mk(t.getFullYear(), t.getMonth(), t.getDate()); };
+
+  function compute() {
+    const open = parse(state.open), n = state.months;
+    const method = methodOf(carrierOf());
+    const cycles = [];
+    let change;
+    if (method === "day") {
+      for (let i = 1; i <= n; i++) {
+        const s = addMonths(open, i - 1), e = addDays(addMonths(open, i), -1);
+        cycles.push({ label: `${i}회차`, s, e });
+      }
+      change = addMonths(open, n);
+    } else {
+      for (let i = 1; i <= n; i++) {
+        const s = i === 1 ? open : monthStart(open, i - 1), e = addDays(monthStart(open, i), -1);
+        cycles.push({ label: `${i}회차`, s, e, tag: i === 1 && open.getDate() !== 1 ? "개통월" : "" });
+      }
+      change = monthStart(open, n);
+    }
+    const last = addDays(change, -1);
+    return { open, change, last, cycles, total: days(open, last) + 1 };
+  }
+
+  // ---- chips
+  function renderMonthChips() {
+    $("monthChips").innerHTML = "";
+    MONTHS.forEach((m) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = `${m}개월`;
+      b.setAttribute("aria-pressed", String(state.months === m));
+      b.onclick = () => { state.months = m; $("customMonths").value = ""; update(); };
+      $("monthChips").appendChild(b);
+    });
+    if (!MONTHS.includes(state.months)) $("customMonths").value = state.months;
+  }
+  function renderAlertChips() {
+    $("alertChips").innerHTML = "";
+    ALERTS.forEach((a) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = a.label;
+      b.setAttribute("aria-pressed", String(state.alerts.has(a.key)));
+      b.onclick = () => { state.alerts.has(a.key) ? state.alerts.delete(a.key) : state.alerts.add(a.key); update(); };
+      $("alertChips").appendChild(b);
+    });
+  }
+
+  function renderNetChips(c) {
+    const box = $("netBox");
+    box.hidden = !needsNet(c);
+    if (box.hidden) return;
+    if (!c.net[state.net]) state.net = nets(c)[0];
+    $("netChips").innerHTML = "";
+    nets(c).forEach((n) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = `${n}망`;
+      b.setAttribute("aria-pressed", String(state.net === n));
+      b.onclick = () => { state.net = n; update(); };
+      $("netChips").appendChild(b);
+    });
+  }
+
+  let result = null;
+  function update() {
+    try { localStorage.setItem("mvno-calc", JSON.stringify({ ...state, alerts: [...state.alerts] })); } catch (e) {}
+    renderMonthChips(); renderAlertChips();
+    const carrier = carrierOf();
+    renderNetChips(carrier);
+    $("methodName").textContent = METHOD_NAME[methodOf(carrier)];
+    if (carrier.id === "etc") {
+      $("methodNote").textContent = "업체를 모르면 더 일찍 끝나는 월 단위로 계산해요. 가입한 업체에 꼭 확인해 주세요.";
+    } else {
+      const list = nets(carrier).map((n) => `${n}망 ${carrier.net[n] === "day" ? "일" : "월"} 단위`).join(" · ");
+      $("methodNote").textContent = `모요 업체 정보 기준 (${list})`;
+    }
+    if (!state.open || !(state.months >= 1)) return;
+    result = compute();
+    $("changeDate").innerHTML = `${fmt(result.change)}<span class="dow">${DOW[result.change.getDay()]}요일</span>`;
+    $("lastDay").textContent = fmt(result.last).slice(2);
+    $("totalDays").textContent = `${result.total}일`;
+    const dd = days(today(), result.change);
+    $("dday").textContent = dd > 0 ? `D-${dd}` : dd === 0 ? "D-DAY" : `D+${-dd}`;
+
+    const rows = result.cycles.map((c) =>
+      `<tr><td>${c.label}${c.tag ? `<span class="tag">${c.tag}</span>` : ""}</td><td class="n">${fmt(c.s).slice(2)} ~ ${fmt(c.e).slice(2)}</td><td class="n">${days(c.s, c.e) + 1}</td></tr>`
+    );
+    rows.push(`<tr class="after"><td>정상요금</td><td class="n">${fmt(result.change).slice(2)} ~</td><td></td></tr>`);
+    $("cycleBody").innerHTML = rows.join("");
+
+    $("addBtn").disabled = state.alerts.size === 0;
+    if (!$("addPanel").hidden) renderAddPanel();
+  }
+
+  // ---- calendar
+  const sortedAlerts = () => ALERTS.filter((a) => state.alerts.has(a.key));
+  const title = () => `알뜰폰 약정변경일 (${state.months}개월 할인 종료)`;
+  const details = () =>
+    `개통일 ${fmtDow(result.open)}\n할인 마지막 날 ${fmtDow(result.last)}\n약정변경일 ${fmtDow(result.change)}\n\n요금제 변경·해지·번호이동을 미리 확인하세요.`;
+
+  function gcalUrl(a) {
+    const d = addDays(result.change, -a.key);
+    const p = new URLSearchParams({
+      action: "TEMPLATE",
+      text: a.key === 0 ? `[당일] ${title()}` : `[${a.label}] ${title()}`,
+      dates: `${ymd(d)}T090000/${ymd(d)}T093000`,
+      ctz: "Asia/Seoul",
+      details: details(),
+    });
+    return "https://calendar.google.com/calendar/render?" + p.toString();
+  }
+
+  function ics() {
+    const esc = (s) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    const d = ymd(result.change);
+    const lines = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//mvno-calc//KO", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:mvno-${d}-${Date.now()}@mvno-calc`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;TZID=Asia/Seoul:${d}T090000`,
+      `DTEND;TZID=Asia/Seoul:${d}T093000`,
+      `SUMMARY:${esc(title())}`,
+      `DESCRIPTION:${esc(details())}`,
+    ];
+    sortedAlerts().forEach((a) => {
+      lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${esc(`${a.label}: ${title()}`)}`,
+        `TRIGGER:${a.key === 0 ? "PT0M" : `-P${a.key}D`}`, "END:VALARM");
+    });
+    lines.push("END:VEVENT", "END:VCALENDAR");
+    return lines.join("\r\n");
+  }
+
+  function renderAddPanel() {
+    $("icsBlock").hidden = inViewer;
+    $("gcalList").innerHTML = "";
+    sortedAlerts().forEach((a) => {
+      const d = addDays(result.change, -a.key);
+      const link = document.createElement("a");
+      link.href = gcalUrl(a); link.target = "_blank"; link.rel = "noopener";
+      link.innerHTML = `<span>${a.label} <span class="d">${fmtDow(d)} 09:00</span></span><span>Google 캘린더 →</span>`;
+      $("gcalList").appendChild(link);
+    });
+    $("status").textContent = "";
+  }
+
+  // ---- Google 캘린더 직접 등록
+  // claude.ai 안: 보는 사람의 Google Calendar 커넥터 / 공개 웹사이트: Google 로그인 + Calendar API
+  const eventFields = () => {
+    const d = iso(result.change);
+    return {
+      summary: title(),
+      description: details(),
+      start: `${d}T09:00:00`,
+      end: `${d}T09:30:00`,
+      reminders: sortedAlerts().map((a) => ({ method: "popup", minutes: a.key * 1440 })),
+    };
+  };
+
+  let backend = null; // { add: async () => htmlLink | null }
+
+  if (inViewer) {
+    if (window.claude && window.claude.use) {
+      window.claude.use("mcp").then((mcp) => {
+        if (mcp) {
+          backend = {
+            add: async () => {
+              const f = eventFields();
+              const res = await mcp.callTool("Google Calendar", "create_event", {
+                summary: f.summary, description: f.description,
+                startTime: f.start, endTime: f.end, overrideReminders: f.reminders,
+              });
+              const p = res && res.payload;
+              return (p && (p.htmlLink || (p.event && p.event.htmlLink))) || null;
+            },
+          };
+          $("directBlock").hidden = false;
+        } else if (PUBLIC_URL) {
+          showPublicHint();
+        }
+      }).catch(() => {});
+    }
+  } else if (GOOGLE_CLIENT_ID) {
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.onload = () => {
+      let pending = null;
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/calendar.events",
+        callback: (r) => { if (pending) { r.error ? pending.reject({ code: "oauth_" + r.error }) : pending.resolve(r.access_token); pending = null; } },
+        error_callback: (e) => { if (pending) { pending.reject({ code: "oauth_" + (e && e.type) }); pending = null; } },
+      });
+      let token = null, tokenExp = 0;
+      const getToken = () => {
+        if (token && Date.now() < tokenExp) return Promise.resolve(token);
+        return new Promise((resolve, reject) => {
+          pending = { resolve: (t) => { token = t; tokenExp = Date.now() + 50 * 60 * 1000; resolve(t); }, reject };
+          tokenClient.requestAccessToken();
+        });
+      };
+      backend = {
+        add: async () => {
+          const t = await getToken();
+          const f = eventFields();
+          const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              summary: f.summary, description: f.description,
+              start: { dateTime: f.start, timeZone: "Asia/Seoul" },
+              end: { dateTime: f.end, timeZone: "Asia/Seoul" },
+              reminders: { useDefault: false, overrides: f.reminders },
+            }),
+          });
+          if (r.status === 401) { token = null; throw { code: "needs_reauth_web" }; }
+          if (!r.ok) throw { code: "api_" + r.status };
+          const ev = await r.json();
+          return ev.htmlLink || null;
+        },
+      };
+      $("directBtn").textContent = "Google 계정으로 캘린더에 바로 등록";
+      $("directBlock").hidden = false;
+    };
+    document.head.appendChild(s);
+  }
+
+  function showPublicHint() {
+    const el = $("publicHint");
+    el.textContent = "Google 캘린더 앱에 알림까지 바로 넣으려면 ";
+    const a = document.createElement("a");
+    a.href = PUBLIC_URL; a.target = "_blank"; a.rel = "noopener"; a.textContent = "공개 페이지";
+    el.append(a, "에서 Google 계정으로 등록해 주세요.");
+    el.hidden = false;
+  }
+
+  const ADD_MSG = {
+    server_not_connected: "Google 캘린더가 연결돼 있지 않아요. claude.ai 설정 → 커넥터에서 Google Calendar를 추가해 주세요.",
+    needs_reauth: "Google 캘린더 연결이 만료됐어요. claude.ai 설정 → 커넥터에서 다시 연결해 주세요.",
+    not_in_manifest: "이 페이지에서 Google 캘린더 사용이 허용되지 않았어요. 아래 링크로 추가해 주세요.",
+    approval_required: "등록을 허용하지 않아서 추가하지 않았어요.",
+    blocked_by_policy: "조직 정책으로 Google 캘린더 등록이 막혀 있어요.",
+    oauth_access_denied: "Google 캘린더 접근을 허용하지 않아서 추가하지 않았어요.",
+    oauth_popup_closed: "Google 로그인 창이 닫혀서 추가하지 않았어요.",
+    oauth_popup_failed_to_open: "Google 로그인 창이 차단됐어요. 팝업을 허용한 뒤 다시 눌러 주세요.",
+    needs_reauth_web: "Google 로그인이 만료됐어요. 다시 눌러 주세요.",
+  };
+  $("directBtn").onclick = async () => {
+    if (!backend || !result) return;
+    const btn = $("directBtn");
+    btn.disabled = true;
+    $("status").textContent = "Google 캘린더에 등록하는 중…";
+    try {
+      const link = await backend.add();
+      $("status").innerHTML = "";
+      $("status").append(`${fmtDow(result.change)} 일정을 등록했어요 (알림: ${sortedAlerts().map((a) => a.label).join(", ")}). `);
+      if (typeof link === "string" && link.startsWith("https://")) {
+        const a = document.createElement("a");
+        a.href = link; a.target = "_blank"; a.rel = "noopener"; a.textContent = "일정 보기";
+        $("status").append(a);
+      }
+    } catch (e) {
+      $("status").textContent = ADD_MSG[e && e.code] || "등록하지 못했어요. 잠시 뒤 다시 누르거나 아래 링크로 추가해 주세요.";
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  $("addBtn").onclick = () => { if (!result) return; $("addPanel").hidden = false; renderAddPanel(); };
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  $("icsBtn").onclick = () => {
+    if (isIOS) {
+      // iOS Safari는 text/calendar 문서를 열면 '캘린더에 추가' 화면을 띄운다
+      location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics());
+      $("status").textContent = "캘린더 화면이 뜨면 '모두 추가'를 눌러 주세요.";
+      return;
+    }
+    const blob = new Blob([ics()], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `알뜰폰_약정변경_${ymd(result.change)}.ics`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    $("status").textContent = "내려받은 파일을 열면 일정과 알림이 함께 등록돼요.";
+  };
+
+  $("openDate").value = state.open || iso(today());
+  state.open = $("openDate").value;
+  CARRIERS.forEach((c) => {
+    const o = document.createElement("option");
+    o.value = c.id; o.textContent = c.name;
+    $("carrier").appendChild(o);
+  });
+  $("carrier").value = state.carrier;
+  $("openDate").addEventListener("input", (e) => { if (e.target.value) { state.open = e.target.value; update(); } });
+  $("customMonths").addEventListener("input", (e) => {
+    const v = parseInt(e.target.value, 10);
+    if (v >= 1 && v <= 60) { state.months = v; update(); }
+  });
+  $("carrier").addEventListener("change", (e) => { state.carrier = e.target.value; update(); });
+
+  update();
+})();
+</script>
+
+</body>
+</html>
