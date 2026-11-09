@@ -415,8 +415,9 @@ label.field > input, label.field > select { max-width: 320px; text-align: center
       "BEGIN:VEVENT",
       `UID:mvno-${d}-${Date.now()}@mvno-calc`,
       `DTSTAMP:${stamp}`,
-      `DTSTART;TZID=Asia/Seoul:${d}T090000`,
-      `DTEND;TZID=Asia/Seoul:${d}T093000`,
+      // 한국시간 09:00 = UTC 00:00 (VTIMEZONE 없이도 모든 캘린더가 같은 시각으로 읽도록 UTC로 적는다)
+      `DTSTART:${d}T000000Z`,
+      `DTEND:${d}T003000Z`,
       `SUMMARY:${esc(title())}`,
       `DESCRIPTION:${esc(details())}`,
     ];
